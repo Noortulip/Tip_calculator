@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gratuity — Tip Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream:        #F8F5EF;
+      --white:        #FFFFFF;
+      --ink:          #18160F;
+      --ink-mid:      #4A4740;
+      --ink-muted:    #7A766E;
+      --ink-faint:    #C0BAB0;
+      --gold:         #B07D2A;
+      --gold-bg:      #F5EDDB;
+      --gold-border:  #D4A847;
+      --red:          #C0392B;
+      --red-bg:       #FDF0EF;
+      --red-border:   #E8A09A;
+      --green:        #1E6B44;
+      --border:       rgba(24,22,15,0.11);
+      --border-mid:   rgba(24,22,15,0.22);
+      --radius:       8px;
+      --radius-lg:    14px;
+      --transition:   0.18s ease;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 400;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      align-items: start;
+      padding: 2.5rem 1rem 3rem;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 400;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+    }
+    h1 em { font-style: italic; color: var(--gold); }
+
+    /* ── LAYOUT ── */
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+
+    .panel-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── FORM FIELDS ── */
+    .field { margin-bottom: 1.4rem; }
+    .field:last-of-type { margin-bottom: 0; }
+
+    .field-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-mid);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-prefix, .input-suffix {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      color: var(--ink-muted);
+      pointer-events: none;
+      user-select: none;
+    }
+    .input-prefix { left: 12px; }
+    .input-suffix { right: 12px; }
+
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      font-family: 'DM Mono', monospace;
+      font-size: 1.1rem;
+      color: var(--ink);
+      background: var(--cream);
+      border: 1.5px solid var(--border-mid);
+      border-radius: var(--radius);
+      padding: 0.6rem 0.85rem;
+      outline: none;
+      transition: border-color var(--transition), background var(--transition);
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    input.has-prefix { padding-left: 2rem; }
+    input.has-suffix { padding-right: 2.2rem; }
+
+    input:focus {
+      border-color: var(--gold-border);
+      background: var(--white);
+      outline: 2px solid transparent;
+      box-shadow: 0 0 0 3px rgba(176,125,42,0.15);
+    }
+
+    input.error {
+      border-color: var(--red-border);
+      background: var(--red-bg);
+    }
+    input.error:focus {
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.12);
+    }
+
+    .field-error {
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 5px;
+      min-height: 1.1em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      opacity: 0;
+      transform: translateY(-3px);
+      transition: opacity var(--transition), transform var(--transition);
+    }
+    .field-error.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .field-error::before {
+      content: '!';
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--red);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── TIP PRESETS ── */
+    .tip-presets {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .tip-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--cream);
+      border: 1.5px solid var(--border-mid);
+      border-radius: var(--radius);
+      padding: 0.5rem 0;
+      cursor: pointer;
+      color: var(--ink-muted);
+      transition: all var(--transition);
+      line-height: 1;
+    }
+    .tip-btn:hover {
+      border-color: var(--gold-border);
+      color: var(--gold);
+      background: var(--gold-bg);
+    }
+    .tip-btn.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: white;
+    }
+    .tip-btn:focus-visible {
+      outline: 2px solid var(--gold-border);
+      outline-offset: 2px;
+    }
+
+    /* ── STEPPER ── */
+    .stepper {
+      display: flex;
+      border: 1.5px solid var(--border-mid);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--cream);
+    }
+    .stepper-btn {
+      font-size: 1.1rem;
+      line-height: 1;
+      background: none;
+      border: none;
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      color: var(--ink-muted);
+      transition: background var(--transition), color var(--transition);
+      user-select: none;
+    }
+    .stepper-btn:hover { background: var(--gold-bg); color: var(--gold); }
+    .stepper-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .stepper-btn:focus-visible { outline: 2px solid var(--gold-border); outline-offset: -2px; }
+
+    .stepper input[type="number"] {
+      border: none;
+      border-left: 1.5px solid var(--border-mid);
+      border-right: 1.5px solid var(--border-mid);
+      border-radius: 0;
+      background: transparent;
+      text-align: center;
+      flex: 1;
+      min-width: 0;
+      padding: 0.6rem 0.25rem;
+      font-size: 1.05rem;
+    }
+    .stepper input:focus { box-shadow: none; background: white; }
+
+    /* ── RESULTS PANEL ── */
+    .results-panel {
+      background: var(--ink);
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .results-panel .panel-title { color: rgba(255,255,255,0.4); }
+
+    .result-row {
+      padding: 0.9rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .result-row:last-of-type { border-bottom: none; }
+
+    .result-label {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      flex-shrink: 0;
+    }
+    .result-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+      text-align: right;
+    }
+
+    .result-row.hero {
+      padding: 1.25rem 0 1rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .result-row.hero .result-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold-border);
+    }
+    .result-row.hero .result-value {
+      font-family: 'DM Serif Display', serif;
+      font-size: 3rem;
+      font-weight: 400;
+      color: white;
+      line-height: 1;
+    }
+
+    .remainder-note {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      font-family: 'DM Mono', monospace;
+      margin-top: 0.4rem;
+      min-height: 14px;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 2rem 0;
+      opacity: 0.3;
+    }
+    .empty-state .empty-icon { font-size: 2rem; }
+    .empty-state p {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-align: center;
+      color: white;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── RESET ── */
+    .reset-btn {
+      display: block;
+      width: 100%;
+      margin-top: 1.25rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: all var(--transition);
+    }
+    .reset-btn:hover { border-color: var(--border-mid); color: var(--ink); background: var(--cream); }
+    .reset-btn:focus-visible { outline: 2px solid var(--gold-border); outline-offset: 2px; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 620px) {
+      body { padding: 1.5rem 0.85rem 2.5rem; }
+      h1 { font-size: 1.75rem; }
+      header { margin-bottom: 1.75rem; }
+
+      .app {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      /* Results panel goes first on mobile so the output is above the fold when keyboard opens */
+      .results-panel { order: -1; }
+
+      .results-panel .empty-state { padding: 1rem 0; }
+      .result-row.hero .result-value { font-size: 2.4rem; }
+
+      .tip-presets { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+      .tip-btn { font-size: 11px; padding: 0.45rem 0; }
+
+      .panel { padding: 1.25rem; }
+    }
+
+    @media (min-width: 621px) and (max-width: 900px) {
+      .app { max-width: 680px; }
+    }
+
+    @media (min-width: 1440px) {
+      .app { max-width: 960px; gap: 24px; }
+      .panel { padding: 2rem 2.25rem; }
+    }
+
+    /* ── SKIP LINK ── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 0;
+      background: var(--gold);
+      color: white;
+      padding: 8px 16px;
+      font-size: 13px;
+      z-index: 999;
+      border-radius: 0 0 var(--radius) 0;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* number flash animation */
+    @keyframes numFlash {
+      0%   { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+    .flashing { animation: numFlash 0.2s ease forwards; }
+  </style>
+</head>
+<body>
+
+<a href="#results" class="skip-link">Skip to results</a>
+
+<header>
+  <p class="eyebrow">Tip Calculator</p>
+  <h1>Split smart,<br>tip <em>generously.</em></h1>
+</header>
+
+<main class="app" role="main">
+
+  <!-- ── INPUT PANEL ── -->
+  <section class="panel" aria-label="Calculator inputs">
+    <p class="panel-title">Enter details</p>
+
+    <!-- Bill Amount -->
+    <div class="field">
+      <label class="field-label" for="bill">Bill amount</label>
+      <div class="input-wrap">
+        <span class="input-prefix" aria-hidden="true">$</span>
+        <input
+          id="bill"
+          type="number"
+          class="has-prefix"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+          autocomplete="off"
+          aria-describedby="bill-error"
+          aria-label="Bill amount in US dollars"
+        />
+      </div>
+      <p id="bill-error" class="field-error" role="alert" aria-live="polite"></p>
+    </div>
+
+    <!-- Tip Percentage -->
+    <div class="field">
+      <label class="field-label" id="tip-label">Tip percentage</label>
+      <div class="tip-presets" role="group" aria-labelledby="tip-label">
+        <button class="tip-btn" data-tip="10" type="button" aria-pressed="false">10%</button>
+        <button class="tip-btn" data-tip="15" type="button" aria-pressed="false">15%</button>
+        <button class="tip-btn active" data-tip="18" type="button" aria-pressed="true">18%</button>
+        <button class="tip-btn" data-tip="20" type="button" aria-pressed="false">20%</button>
+        <button class="tip-btn" data-tip="25" type="button" aria-pressed="false">25%</button>
+      </div>
+      <div class="input-wrap">
+        <input
+          id="custom-tip"
+          type="number"
+          class="has-suffix"
+          inputmode="decimal"
+          min="0"
+          step="0.1"
+          placeholder="Custom"
+          autocomplete="off"
+          aria-describedby="tip-error"
+          aria-label="Custom tip percentage"
+        />
+        <span class="input-suffix" aria-hidden="true">%</span>
+      </div>
+      <p id="tip-error" class="field-error" role="alert" aria-live="polite"></p>
+    </div>
+
+    <!-- Number of People -->
+    <div class="field">
+      <label class="field-label" for="people-input">Number of people</label>
+      <div class="stepper">
+        <button class="stepper-btn" id="people-minus" type="button" aria-label="Remove one person" disabled>−</button>
+        <input
+          id="people-input"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          max="500"
+          step="1"
+          value="1"
+          aria-describedby="people-error"
+          aria-label="Number of people splitting the bill"
+        />
+        <button class="stepper-btn" id="people-plus" type="button" aria-label="Add one person">+</button>
+      </div>
+      <p id="people-error" class="field-error" role="alert" aria-live="polite"></p>
+    </div>
+
+    <button class="reset-btn" id="reset-btn" type="button">↺ Reset calculator</button>
+  </section>
+
+  <!-- ── RESULTS PANEL ── -->
+  <section class="panel results-panel" id="results" aria-label="Calculation results" aria-live="polite">
+    <p class="panel-title">Breakdown</p>
+
+    <div id="results-body">
+      <!-- populated by JS -->
+    </div>
+  </section>
+
+</main>
+
+<footer>Gratuity v1.0 &mdash; Rounding: ceiling to nearest cent per person</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── STATE ── */
+  const state = {
+    bill: null,
+    tipPct: 18,
+    people: 1,
+  };
+
+  /* ── DOM REFS ── */
+  const billInput    = document.getElementById('bill');
+  const customTip    = document.getElementById('custom-tip');
+  const peopleInput  = document.getElementById('people-input');
+  const minusBtn     = document.getElementById('people-minus');
+  const plusBtn      = document.getElementById('people-plus');
+  const resetBtn     = document.getElementById('reset-btn');
+  const tipBtns      = document.querySelectorAll('.tip-btn');
+  const resultsBody  = document.getElementById('results-body');
+
+  const billError   = document.getElementById('bill-error');
+  const tipError    = document.getElementById('tip-error');
+  const peopleError = document.getElementById('people-error');
+
+  /* ── VALIDATION ── */
+  const MAX_BILL   = 1_000_000;
+  const MAX_TIP    = 100;
+
+  function showError(el, input, msg) {
+    el.textContent = msg;
+    el.classList.toggle('visible', !!msg);
+    if (input) input.classList.toggle('error', !!msg);
+  }
+
+  function validateBill(val) {
+    if (val === '' || val === null || val === undefined) return null; // empty → no result
+    const n = parseFloat(val);
+    if (isNaN(n))                  return 'Enter a valid number';
+    if (n < 0)                     return 'Bill must be positive';
+    if (n > MAX_BILL)              return 'Bill seems too large (max $1,000,000)';
+    if (!/^\d*\.?\d{0,2}$/.test(String(val).trim())) return 'Max 2 decimal places';
+    return null;
+  }
+
+  function validateTip(val) {
+    // val is from custom input (string or empty)
+    if (val === '' || val === null) return null; // will use state.tipPct from preset
+    const n = parseFloat(val);
+    if (isNaN(n))       return 'Enter a valid tip %';
+    if (n < 0)          return 'Tip can\'t be negative';
+    if (n > MAX_TIP)    return `Max tip is ${MAX_TIP}%`;
+    return null;
+  }
+
+  function validatePeople(val) {
+    const n = parseInt(val, 10);
+    if (val === '' || isNaN(n))  return 'Enter a number of people';
+    if (n < 1)                   return 'At least 1 person required';
+    if (!Number.isInteger(n))    return 'Must be a whole number';
+    if (n > 500)                 return 'Max 500 people';
+    return null;
+  }
+
+  /* ── ROUNDING ── */
+  // Policy: ceiling to the nearest cent per person so the group never underpays.
+  // We calculate perPersonRaw, then Math.ceil(perPersonRaw * 100) / 100.
+  // The "remainder" is the overpayment vs the exact total — displayed so users
+  // know the group is paying slightly more than the precise amount.
+  function ceilCent(n) {
+    return Math.ceil(n * 100) / 100;
+  }
+
+  function fmt(n) {
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  /* ── CALCULATION ── */
+  function calculate() {
+    const billVal   = billInput.value.trim();
+    const customVal = customTip.value.trim();
+    const peopleVal = peopleInput.value.trim();
+
+    const billErr   = validateBill(billVal);
+    const tipErr    = validateTip(customVal);
+    const peopleErr = validatePeople(peopleVal);
+
+    showError(billError,   billInput,   billErr);
+    showError(tipError,    customTip,   tipErr);
+    showError(peopleError, peopleInput, peopleErr);
+
+    // Determine tip %
+    let tipPct = state.tipPct; // from preset
+    if (customVal !== '') {
+      const n = parseFloat(customVal);
+      if (!isNaN(n) && n >= 0 && n <= MAX_TIP) tipPct = n;
+    }
+
+    // Bail if any errors or empty bill
+    if (billErr || tipErr || peopleErr || billVal === '') {
+      renderEmpty();
+      return;
+    }
+
+    const bill   = parseFloat(billVal);
+    const people = parseInt(peopleVal, 10);
+
+    if (bill === 0) {
+      renderZero();
+      return;
+    }
+
+    const tipTotal    = bill * (tipPct / 100);
+    const grandTotal  = bill + tipTotal;
+    const perPersonExact = grandTotal / people;
+    const perPersonCeil  = ceilCent(perPersonExact);
+    const groupTotal     = perPersonCeil * people;
+    const remainder      = +(groupTotal - grandTotal).toFixed(2);
+
+    renderResults({ bill, tipTotal, grandTotal, perPersonCeil, people, tipPct, remainder });
+  }
+
+  function flashValue(el) {
+    el.classList.remove('flashing');
+    void el.offsetWidth; // reflow
+    el.classList.add('flashing');
+  }
+
+  function renderEmpty() {
+    resultsBody.innerHTML = `
+      <div class="empty-state" aria-label="Enter a bill amount to see results">
+        <span class="empty-icon" aria-hidden="true">🧾</span>
+        <p>Enter a bill amount<br>to see the breakdown</p>
+      </div>`;
+  }
+
+  function renderZero() {
+    resultsBody.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon" aria-hidden="true">✓</span>
+        <p>Nothing to split —<br>bill is $0.00</p>
+      </div>`;
+  }
+
+  function renderResults({ bill, tipTotal, grandTotal, perPersonCeil, people, tipPct, remainder }) {
+    const perLabel = people === 1 ? 'Total to pay' : `Each person pays`;
+    const splitNote = people > 1
+      ? `${people} people &times; ${fmt(perPersonCeil)}`
+      : '';
+
+    const remainderLine = (remainder > 0 && people > 1)
+      ? `Group overpays by ${fmt(remainder)} (rounding up per person)`
+      : '';
+
+    resultsBody.innerHTML = `
+      <div class="result-row hero">
+        <span class="result-label">${perLabel}</span>
+        <span class="result-value" id="rv-per-person">${fmt(perPersonCeil)}</span>
+        ${splitNote ? `<span class="remainder-note" id="rv-split-note">${splitNote}</span>` : ''}
+      </div>
+      <div class="result-row">
+        <span class="result-label">Tip (${tipPct % 1 === 0 ? tipPct : tipPct.toFixed(1)}%)</span>
+        <span class="result-value" id="rv-tip">${fmt(tipTotal)}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Subtotal</span>
+        <span class="result-value" id="rv-subtotal">${fmt(bill)}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Grand total</span>
+        <span class="result-value" id="rv-grand">${fmt(grandTotal)}</span>
+      </div>
+      ${remainderLine ? `<p class="remainder-note" style="color:rgba(255,255,255,0.3);margin-top:.6rem;font-size:11px">${remainderLine}</p>` : ''}
+    `;
+
+    // Flash the hero number on update
+    const heroEl = document.getElementById('rv-per-person');
+    if (heroEl) flashValue(heroEl);
+  }
+
+  /* ── PRESET TIP BUTTONS ── */
+  tipBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tipBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+      state.tipPct = parseFloat(btn.dataset.tip);
+      customTip.value = '';
+      showError(tipError, customTip, null);
+      calculate();
+    });
+  });
+
+  /* ── CUSTOM TIP ── */
+  customTip.addEventListener('input', () => {
+    if (customTip.value.trim() !== '') {
+      // deactivate presets visually when user types custom
+      tipBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+    }
+    calculate();
+  });
+
+  /* ── BILL INPUT ── */
+  billInput.addEventListener('input', calculate);
+
+  // Prevent 'e', '+', '-' from being typed into number fields
+  function blockInvalidKeys(e) {
+    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+  }
+  billInput.addEventListener('keydown', blockInvalidKeys);
+  customTip.addEventListener('keydown', (e) => {
+    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+  });
+  peopleInput.addEventListener('keydown', (e) => {
+    if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
+  });
+
+  /* ── PEOPLE STEPPER ── */
+  function updatePeople(n) {
+    n = Math.max(1, Math.min(500, n));
+    state.people = n;
+    peopleInput.value = n;
+    minusBtn.disabled = n <= 1;
+    plusBtn.disabled  = n >= 500;
+    calculate();
+  }
+
+  minusBtn.addEventListener('click', () => updatePeople(state.people - 1));
+  plusBtn.addEventListener('click',  () => updatePeople(state.people + 1));
+
+  peopleInput.addEventListener('input', () => {
+    const v = parseInt(peopleInput.value, 10);
+    if (!isNaN(v)) {
+      state.people = v;
+      minusBtn.disabled = v <= 1;
+      plusBtn.disabled  = v >= 500;
+    }
+    calculate();
+  });
+
+  /* ── RESET ── */
+  resetBtn.addEventListener('click', () => {
+    billInput.value    = '';
+    customTip.value    = '';
+    peopleInput.value  = '1';
+    state.bill    = null;
+    state.tipPct  = 18;
+    state.people  = 1;
+    minusBtn.disabled = true;
+    plusBtn.disabled  = false;
+
+    tipBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+    document.querySelector('[data-tip="18"]').classList.add('active');
+    document.querySelector('[data-tip="18"]').setAttribute('aria-pressed', 'true');
+
+    showError(billError,   billInput,   null);
+    showError(tipError,    customTip,   null);
+    showError(peopleError, peopleInput, null);
+
+    renderEmpty();
+    billInput.focus();
+  });
+
+  /* ── INIT ── */
+  renderEmpty();
+})();
+</script>
+</body>
+</html>
